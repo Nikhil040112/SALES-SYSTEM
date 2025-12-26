@@ -117,6 +117,11 @@ function headers() {
 /* LOAD LEADS */
 async function loadLeads() {
   const res = await fetch("/leads/my", { headers: headers() });
+
+  if (res.status === 401) {
+    window.location.href = "/login";
+    return;
+  }
   if (!res.ok) return;
 
   const data = await res.json();
@@ -126,7 +131,7 @@ async function loadLeads() {
 
   ul.innerHTML = "";
 
-  if (!data.length) {
+  if (!Array.isArray(data) || !data.length) {
     emptyState.style.display = "block";
     listWrapper.style.display = "none";
     return;
@@ -135,21 +140,23 @@ async function loadLeads() {
   emptyState.style.display = "none";
   listWrapper.style.display = "block";
 
-  data.forEach(l => {
+  data.forEach(function (l) {
     const li = document.createElement("li");
     li.className = "lead-item";
-    li.innerHTML = `
-      <div class="lead-main">
-        <span class="lead-title">${l.client_name}</span>
-        <span class="lead-sub">${l.query_source || "Unknown source"}</span>
-      </div>
-      <div class="lead-meta">
-        ${l.contact_number}
-      </div>
-    `;
-    li.onclick = () => {
-      window.location.href = \`/call-details?lead_id=\${l.id}\`;
+
+    li.innerHTML =
+      '<div class="lead-main">' +
+        '<span class="lead-title">' + (l.client_name || "") + '</span>' +
+        '<span class="lead-sub">' + (l.query_source || "Unknown source") + '</span>' +
+      '</div>' +
+      '<div class="lead-meta">' +
+        (l.contact_number || "") +
+      '</div>';
+
+    li.onclick = function () {
+      window.location.href = "/call-details?lead_id=" + l.id;
     };
+
     ul.appendChild(li);
   });
 }
