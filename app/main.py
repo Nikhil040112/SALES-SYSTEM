@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
@@ -26,7 +27,8 @@ app.add_middleware(
 # --------------------------------------------------
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return RedirectResponse(url="/login")
+
 
 app.include_router(frontend.router)
 app.include_router(auth_api.router)
