@@ -14,12 +14,11 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-
-# 🔴 CRITICAL: import models so SQLAlchemy knows them
+# 🔴 CRITICAL: import ALL models so FKs resolve
 from app.models.user import User
+from app.models.lead import Lead          # ✅ THIS WAS MISSING
 from app.models.call_log import CallLog
 from app.models.call_follow_up import CallFollowUp
 
-
-# 🔴 CRITICAL: create tables (dev-safe)
+# 🔴 DEV-ONLY table creation
 Base.metadata.create_all(bind=engine)
