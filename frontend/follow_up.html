@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}My Follow-ups - Sales Pro{% endblock %}
+
+{% block content %}
+<div style="max-width: 1120px; margin: 0 auto; padding: 8px 0 24px;">
+
+  <!-- Heading -->
+  <div style="margin-bottom:16px;">
+    <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;">
+      My follow‑ups
+      <span style="
+        display:inline-block;
+        margin-left:8px;
+        padding:2px 8px;
+        border-radius:999px;
+        background:#eef2ff;
+        font-size:11px;
+        font-weight:600;
+        color:#4b5563;
+      ">
+        Upcoming & overdue actions
+      </span>
+    </div>
+    <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">
+      See all calls that require your follow‑up, sorted by date.
+    </p>
+  </div>
+
+  <!-- Card -->
+  <div style="
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 10px 30px rgba(15,23,42,0.08);
+  ">
+    <div style="padding:12px 16px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;font-size:15px;">Follow‑up queue</div>
+        <div style="font-size:12px;color:#6b7280;">Click a row to open call details and log the next step.</div>
+      </div>
+      <button
+        onclick="loadFollowups()"
+        style="
+          border:none;
+          padding:6px 12px;
+          border-radius:999px;
+          background:#2563eb;
+          color:#ffffff;
+          font-size:12px;
+          font-weight:600;
+          cursor:pointer;
+        "
+      >
+        Refresh
+      </button>
+    </div>
+
+    <div id="emptyState" style="display:none;text-align:center;padding:32px 16px;">
+      <div style="font-size:32px;margin-bottom:8px;">✅</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">No pending follow‑ups</div>
+      <div style="font-size:13px;color:#6b7280;max-width:320px;margin:0 auto;">
+        All your calls are up to date. New follow‑ups will appear here automatically.
+      </div>
+    </div>
+
+    <div id="listWrapper" style="max-height:420px;overflow-y:auto;padding:6px 0;">
+      <ul id="followups" style="list-style:none;margin:0;padding:0;"></ul>
+    </div>
+  </div>
+</div>
+
+<style>
+.followup-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 12px;
+  border-bottom:1px solid #f3f4f6;
+  font-size:13px;
+  cursor:pointer;
+  transition:background .2s ease, transform .2s ease;
+}
+.followup-item:last-child{
+  border-bottom:none;
+}
+.followup-item:hover{
+  background:#f3f4ff;
+  transform:translateX(4px);
+}
+.followup-main{
+  display:flex;
+  flex-direction:column;
+}
+.followup-title{
+  font-weight:600;
+  color:#111827;
+}
+.followup-sub{
+  font-size:11px;
+  color:#6b7280;
+}
+.followup-meta{
+  text-align:right;
+  font-size:11px;
+  color:#6b7280;
+}
+.badge-overdue{
+  display:inline-block;
+  margin-left:6px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#fee2e2;
+  color:#b91c1c;
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.badge-today{
+  display:inline-block;
+  margin-left:6px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#dcfce7;
+  color:#166534;
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+</style>
+
+<script>
+function headers() {
+  return {
+    "Authorization": "Bearer " + localStorage.getItem("token"),
+    "Content-Type": "application/json"
+  };
+}
+
+function isToday(dateStr){
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear()===now.getFullYear() &&
+         d.getMonth()===now.getMonth() &&
+         d.getDate()===now.getDate();
+}
+
+async function loadFollowups() {
+  const res = await fetch("/calls/follow-ups", { headers: headers() });
+  if (!res.ok) return;
+
+  const data = await res.json();
+  const ul = document.getElementById("followups");
+  const emptyState = document.getElementById("emptyState");
+  const listWrapper = document.getElementById("listWrapper");
+
+  ul.innerHTML = "";
+
+  if (!data.length){
+    emptyState.style.display = "block";
+    listWrapper.style.display = "none";
+    return;
+  }
+
+  emptyState.style.display = "none";
+  listWrapper.style.display = "block";
+
+  // sort soonest follow-up first
+  data.sort((a,b) => new Date(a.follow_up_datetime || a.created_at) - new Date(b.follow_up_datetime || b.created_at));
+
+  data.forEach(f => {
+    const li = document.createElement("li");
+    li.className = "followup-item";
+
+    const dt = f.follow_up_datetime ? new Date(f.follow_up_datetime) : null;
+    const dateLabel = dt ? dt.toLocaleString('en-IN') : "No date";
+
+    let statusBadge = "";
+    if (f.is_overdue){
+      statusBadge = "<span class='badge-overdue'>Overdue</span>";
+    } else if (dt && isToday(f.follow_up_datetime)){
+      statusBadge = "<span class='badge-today'>Today</span>";
+    }
+
+    li.innerHTML = `
+      <div class="followup-main">
+        <span class="followup-title">
+          ${f.client_name} – ${f.call_outcome || "N/A"} ${statusBadge}
+        </span>
+        <span class="followup-sub">
+          ${f.query_product || "No product"} · ${f.state || "NA"}
+        </span>
+      </div>
+      <div class="followup-meta">
+        <div>${dateLabel}</div>
+      </div>
+    `;
+
+    li.onclick = () => {
+      window.location.href = "/call-details?call_id=" + f.id;
+    };
+
+    ul.appendChild(li);
+  });
+}
+
+loadFollowups();
+</script>
+{% endblock %}

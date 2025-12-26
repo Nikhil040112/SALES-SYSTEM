@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Salesperson Performance - Sales Pro{% endblock %}
+
+{% block content %}
+<div style="max-width: 1120px; margin: 0 auto; padding: 8px 0 24px;">
+
+  <!-- Header -->
+  <div style="
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+  ">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button
+        onclick="window.history.back()"
+        style="
+          border:1px solid #e5e7eb;
+          background:#ffffff;
+          border-radius:12px;
+          padding:6px 10px;
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+          font-size:13px;
+          font-weight:600;
+          cursor:pointer;
+        "
+      >
+        ← Back
+      </button>
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;">Sales Performance</div>
+        <div style="font-size:13px;color:#6b7280;">
+          Real‑time metrics across your sales team.
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <div style="text-align:right;">
+        <div id="totalTeamCalls" style="font-size:20px;font-weight:700;">-</div>
+        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;">Total team calls</div>
+      </div>
+      <div style="text-align:right;">
+        <div id="totalTeamConversion" style="font-size:20px;font-weight:700;color:#059669;">-</div>
+        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;">Avg conversion</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards grid -->
+  <div id="cards" class="performance-grid"></div>
+
+  <!-- Empty state -->
+  <div id="emptyState" style="display:none; text-align:center; padding:40px 16px;">
+    <div style="
+      width:64px;height:64px;
+      border-radius:18px;
+      background:#eff6ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto 16px;
+    ">
+      ✅
+    </div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px;">No performance data yet</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:12px;max-width:320px;margin-left:auto;margin-right:auto;">
+      Salespeople need to log some calls before performance metrics appear here.
+    </div>
+    <a href="/admin" style="
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:8px 16px;
+      border-radius:999px;
+      background:#2563eb;
+      color:#ffffff;
+      font-size:13px;
+      font-weight:600;
+      text-decoration:none;
+    ">
+      Go to Admin
+      →
+    </a>
+  </div>
+</div>
+
+<style>
+/* tile layout: 3 per row, then 2, then 1 */
+.performance-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:12px;
+}
+@media (max-width: 1024px){
+  .performance-grid{
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px){
+  .performance-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.performance-card{
+  background:#ffffff;
+  border-radius:14px;
+  border:1px solid #e5e7eb;
+  padding:14px 14px 10px;
+  box-shadow:0 12px 28px rgba(15,23,42,.08);
+  position:relative;
+  overflow:hidden;
+}
+.performance-card h3{
+  margin:0 0 10px;
+  font-size:15px;
+  font-weight:700;
+}
+.metric-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding:6px 0;
+  border-top:1px solid #f3f4f6;
+  font-size:12px;
+}
+.metric-row:first-of-type{
+  border-top:none;
+}
+.metric-label{
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#6b7280;
+  font-weight:600;
+  font-size:10px;
+}
+.metric-value{
+  font-weight:700;
+  font-size:15px;
+}
+.conversion-badge{
+  display:inline-block;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#fef9c3;
+  color:#92400e;
+  font-size:11px;
+  font-weight:600;
+}
+.rank-badge{
+  position:absolute;
+  top:8px;
+  right:10px;
+  font-size:11px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#4f46e5;
+  font-weight:600;
+}
+.loading{
+  grid-column:1 / -1;
+  text-align:center;
+  padding:40px 0;
+  font-size:13px;
+  color:#6b7280;
+}
+</style>
+
+<script>
+const headers = () => ({
+  "Authorization": "Bearer " + localStorage.getItem("token")
+});
+
+async function loadPerformanceCards() {
+  const cardsContainer = document.getElementById("cards");
+  const emptyState = document.getElementById("emptyState");
+  const totalCallsEl = document.getElementById("totalTeamCalls");
+  const totalConversionEl = document.getElementById("totalTeamConversion");
+
+  cardsContainer.innerHTML = '<div class="loading">Loading performance…</div>';
+  emptyState.style.display = "none";
+
+  try {
+    const res = await fetch("/admin/performance-cards", { headers: headers() });
+    if (!res.ok) {
+      cardsContainer.innerHTML = '<div class="loading">Failed to load performance data.</div>';
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.length) {
+      cardsContainer.innerHTML = "";
+      emptyState.style.display = "block";
+      return;
+    }
+
+    const totalCalls = data.reduce((sum, d) => sum + d.total_calls, 0);
+    const avgConversion = data.reduce((sum, d) => sum + d.conversion_rate, 0) / data.length;
+
+    totalCallsEl.textContent = totalCalls.toLocaleString();
+    totalConversionEl.textContent = avgConversion.toFixed(1) + "%";
+
+    data.sort((a, b) => b.conversion_rate - a.conversion_rate);
+
+    cardsContainer.innerHTML = "";
+    data.forEach((d, index) => {
+      const div = document.createElement("div");
+      div.className = "performance-card";
+      div.innerHTML = `
+        <div class="rank-badge">#${index + 1}</div>
+        <h3>${d.salesperson}</h3>
+        <div class="metric-row">
+          <div class="metric-label">Total leads</div>
+          <div class="metric-value">${d.total_leads.toLocaleString()}</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">New leads</div>
+          <div class="metric-value">${d.new_leads.toLocaleString()}</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Calls made</div>
+          <div class="metric-value">${d.total_calls.toLocaleString()}</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Purchased</div>
+          <div class="metric-value">${d.purchased.toLocaleString()}</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-label">Conversion</div>
+          <div class="metric-value">
+            <span class="conversion-badge">${d.conversion_rate}%</span>
+          </div>
+        </div>
+      `;
+      cardsContainer.appendChild(div);
+    });
+  } catch (e) {
+    cardsContainer.innerHTML = '<div class="loading">Network error. Please refresh.</div>';
+  }
+}
+
+loadPerformanceCards();
+</script>
+{% endblock %}

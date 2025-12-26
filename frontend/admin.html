@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - Sales Pro{% endblock %}
+
+{% block content %}
+<div style="max-width:1120px;margin:0 auto;padding:8px 0 24px;">
+
+  <!-- HEADER -->
+  <div style="margin-bottom:20px;">
+    <h1 style="font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:-0.02em;color:#0f172a;">
+      Admin Dashboard
+    </h1>
+    <p style="margin:0;font-size:14px;color:#6b7280;">
+      Monitor leads, calls and sales performance across your team.
+    </p>
+  </div>
+
+  <!-- FILTERS -->
+  <div style="
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 10px 30px rgba(15,23,42,0.08);
+    padding:12px 16px;
+    margin-bottom:16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:flex-end;
+  ">
+    <div style="flex:1;min-width:190px;">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">
+        Salesperson
+      </div>
+      <select id="salespersonFilter" style="
+        width:100%;
+        padding:8px 10px;
+        border-radius:10px;
+        border:1px solid #e5e7eb;
+        font-size:13px;
+        background:#f9fafb;
+      ">
+        <option value="">All salespersons</option>
+      </select>
+    </div>
+
+    <div style="flex:1;min-width:170px;">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">
+        Date filter
+      </div>
+      <select id="dateFilter" style="
+        width:100%;
+        padding:8px 10px;
+        border-radius:10px;
+        border:1px solid #e5e7eb;
+        font-size:13px;
+        background:#f9fafb;
+      ">
+        <option value="">All time</option>
+        <option value="today">Today</option>
+        <option value="week">Last 7 days</option>
+        <option value="month">This month</option>
+      </select>
+    </div>
+
+    <button onclick="applyFilters()" style="
+      padding:8px 18px;
+      border-radius:999px;
+      border:none;
+      background:linear-gradient(135deg,#10b981,#059669);
+      color:#ffffff;
+      font-size:13px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(16,185,129,0.35);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    ">
+      <span style="font-size:14px;">⟳</span>
+      Apply filters
+    </button>
+  </div>
+
+  <!-- TABS -->
+  <div style="
+    display:flex;
+    gap:4px;
+    background:#ffffff;
+    border-radius:999px;
+    box-shadow:0 8px 24px rgba(15,23,42,0.12);
+    padding:3px;
+    margin-bottom:16px;
+    max-width:420px;
+  ">
+    <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" data-tab="calls" onclick="switchTab('calls')">All Calls</button>
+    <button class="tab" data-tab="performance" onclick="switchTab('performance')">Performance</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="overviewTab">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total leads</div>
+        <div class="kpi-number" id="kpiTotalLeads">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">New leads</div>
+        <div class="kpi-number" id="kpiNewLeads">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Called leads</div>
+        <div class="kpi-number" id="kpiCalledLeads">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Closed leads</div>
+        <div class="kpi-number" id="kpiClosedLeads">0</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="table-title">Leads</div>
+        <div class="table-subtitle">Filtered by salesperson and date</div>
+      </div>
+      <div class="table-card-body">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Contact</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Salesperson</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALLS -->
+  <div id="callsTab" style="display:none;">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="table-title">All calls</div>
+        <div class="table-subtitle">Includes first calls and follow‑ups</div>
+      </div>
+      <div class="table-card-body">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Product</th>
+                <th>Outcome</th>
+                <th>Status</th>
+                <th>Salesperson</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="callsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE -->
+  <div id="performanceTab" style="display:none;">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total calls</div>
+        <div class="kpi-number" id="kpiCalls">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Purchased</div>
+        <div class="kpi-number" id="kpiPurchased">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending follow‑ups</div>
+        <div class="kpi-number" id="kpiPending">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Conversion</div>
+        <div class="kpi-number" id="kpiConversion">0%</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.tab{
+  flex:1;
+  border:none;
+  background:transparent;
+  padding:7px 10px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:600;
+  color:#6b7280;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.tab.active{
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  color:#ffffff;
+  box-shadow:0 8px 18px rgba(37,99,235,.35);
+}
+.tab:hover:not(.active){
+  background:#eef2ff;
+  color:#2563eb;
+}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.kpi-card{
+  background:#ffffff;
+  border-radius:12px;
+  border:1px solid #e5e7eb;
+  padding:10px 12px;
+  box-shadow:0 4px 14px rgba(15,23,42,0.04);
+}
+.kpi-label{
+  font-size:11px;
+  text-transform:uppercase;
+  color:#6b7280;
+  letter-spacing:.06em;
+  margin-bottom:4px;
+}
+.kpi-number{
+  font-size:20px;
+  font-weight:700;
+  color:#111827;
+}
+
+.table-card{
+  background:#ffffff;
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 10px 30px rgba(15,23,42,.06);
+}
+.table-card-header{
+  padding:10px 14px;
+  border-bottom:1px solid #e5e7eb;
+}
+.table-title{
+  font-size:15px;
+  font-weight:700;
+  color:#111827;
+}
+.table-subtitle{
+  font-size:11px;
+  color:#9ca3af;
+}
+.table-card-body{
+  padding:8px 10px 12px;
+}
+
+.data-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.data-table th{
+  text-align:left;
+  padding:8px 6px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#6b7280;
+  border-bottom:1px solid #e5e7eb;
+  white-space:nowrap;
+}
+.data-table td{
+  padding:8px 6px;
+  border-bottom:1px solid #f3f4f6;
+}
+.data-table tbody tr:hover{
+  background:#f9fafb;
+}
+
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:600;
+}
+.status-dot{
+  width:7px;
+  height:7px;
+  border-radius:999px;
+}
+.status-new{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+.status-new .status-dot{
+  background:#1d4ed8;
+}
+.status-contacted{
+  background:#dcfce7;
+  color:#166534;
+}
+.status-contacted .status-dot{
+  background:#16a34a;
+}
+.status-closed{
+  background:#fef3c7;
+  color:#92400e;
+}
+.status-closed .status-dot{
+  background:#f59e0b;
+}
+.status-open{
+  background:#fee2e2;
+  color:#b91c1c;
+}
+.status-open .status-dot{
+  background:#ef4444;
+}
+
+@media (max-width:768px){
+  .table-card-header{
+    padding:10px;
+  }
+}
+</style>
+
+<script>
+const headers = () => ({
+  Authorization: "Bearer " + localStorage.getItem("token")
+});
+
+/* STATUS → CSS CLASS MAPPING */
+function statusClass(status) {
+  if (!status) return "status-open";
+  if (status === "NEW") return "status-new";
+  if (status === "CALLED") return "status-contacted";
+  if (status === "CLOSED") return "status-closed";
+  return "status-open";
+}
+
+let filters = {};
+
+async function applyFilters() {
+  filters = {
+    salesperson_id: document.getElementById("salespersonFilter").value || "",
+    span: document.getElementById("dateFilter").value || ""
+  };
+  loadOverview();
+}
+
+/* OPTIONAL: load salesperson options (no backend change needed if endpoint exists) */
+async function loadSalespersons() {
+  try {
+    const res = await fetch("/admin/salespersons", { headers: headers() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const sel = document.getElementById("salespersonFilter");
+    sel.innerHTML = '<option value="">All salespersons</option>';
+    data.forEach(s => {
+      sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+    });
+  } catch(e) {
+    // silent fail
+  }
+}
+
+function queryString() {
+  return new URLSearchParams(filters).toString();
+}
+
+async function loadOverview() {
+  const qs = queryString();
+
+  const kpi = await (await fetch(`/admin/kpis?${qs}`, { headers: headers() })).json();
+  kpiTotalLeads.textContent = kpi.total_leads;
+  kpiNewLeads.textContent = kpi.new_leads;
+  kpiCalledLeads.textContent = kpi.called_leads;
+  kpiClosedLeads.textContent = kpi.closed_leads;
+
+  const leads = await (await fetch(`/admin/leads?${qs}`, { headers: headers() })).json();
+  const tbody = document.getElementById("leadsTable");
+  tbody.innerHTML = "";
+
+  leads.forEach(l => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${l.client_name}</td>
+        <td>${l.contact_number}</td>
+        <td>${l.query_source || "-"}</td>
+        <td>
+          <span class="status-badge ${statusClass(l.status)}">
+            <span class="status-dot"></span>
+            ${l.status}
+          </span>
+        </td>
+        <td>${l.salesperson}</td>
+        <td>${new Date(l.created_at).toLocaleDateString("en-IN")}</td>
+      </tr>
+    `;
+  });
+}
+
+async function loadCalls() {
+  const qs = queryString();
+  const calls = await (await fetch(`/admin/calls?${qs}`, { headers: headers() })).json();
+  const tbody = document.getElementById("callsTable");
+  tbody.innerHTML = "";
+
+  calls.forEach(c => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.client_name}</td>
+        <td>${c.query_product || "-"}</td>
+        <td>${c.call_outcome || "-"}</td>
+        <td>
+          <span class="status-badge ${statusClass(c.status)}">
+            <span class="status-dot"></span>
+            ${c.status}
+          </span>
+        </td>
+        <td>${c.salesperson}</td>
+        <td>${new Date(c.created_at).toLocaleDateString("en-IN")}</td>
+      </tr>
+    `;
+  });
+}
+
+async function loadPerformance() {
+  const qs = queryString();
+  const k = await (await fetch(`/admin/kpis?${qs}`, { headers: headers() })).json();
+  kpiCalls.textContent = k.total_calls;
+  kpiPurchased.textContent = k.purchased;
+  kpiPending.textContent = k.pending_followups;
+  kpiConversion.textContent = k.conversion_rate + "%";
+}
+
+function switchTab(tab) {
+  document.getElementById("overviewTab").style.display = tab === "overview" ? "block" : "none";
+  document.getElementById("callsTab").style.display = tab === "calls" ? "block" : "none";
+  document.getElementById("performanceTab").style.display = tab === "performance" ? "block" : "none";
+
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${tab}"]`)?.classList.add("active");
+
+  if (tab === "overview") loadOverview();
+  if (tab === "calls") loadCalls();
+  if (tab === "performance") loadPerformance();
+}
+
+/* INITIAL LOAD */
+loadSalespersons();
+loadOverview();
+</script>
+{% endblock %}

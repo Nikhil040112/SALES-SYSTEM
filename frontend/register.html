@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Register - Sales Pro{% endblock %}
+
+{% block content %}
+<div style="max-width: 460px; margin: 40px auto; padding: 8px 0 24px;">
+
+  <div style="
+    background:#ffffff;
+    border-radius:20px;
+    border:1px solid #e5e7eb;
+    box-shadow:0 12px 32px rgba(15,23,42,0.12);
+    padding:20px 22px 18px;
+  ">
+    <div style="margin-bottom:14px;">
+      <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;">Register salesperson</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">
+        Create a new account to start logging calls and tracking performance.
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:3px;">
+          Name
+        </label>
+        <input id="name" placeholder="Full name" style="
+          width:100%;
+          padding:8px 10px;
+          border-radius:10px;
+          border:1px solid #e5e7eb;
+          font-size:13px;
+        ">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:3px;">
+          Email
+        </label>
+        <input id="email" placeholder="you@example.com" style="
+          width:100%;
+          padding:8px 10px;
+          border-radius:10px;
+          border:1px solid #e5e7eb;
+          font-size:13px;
+        ">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#4b5563;margin-bottom:3px;">
+          Password
+        </label>
+        <input id="password" type="password" placeholder="Create a password" style="
+          width:100%;
+          padding:8px 10px;
+          border-radius:10px;
+          border:1px solid #e5e7eb;
+          font-size:13px;
+        ">
+      </div>
+
+      <p id="error" style="min-height:16px;font-size:12px;color:#b91c1c;margin:2px 0 0;"></p>
+      <p id="success" style="min-height:16px;font-size:12px;color:#15803d;margin:2px 0 0;"></p>
+
+      <button
+        onclick="registerUser()"
+        style="
+          margin-top:4px;
+          width:100%;
+          border:none;
+          padding:8px 16px;
+          border-radius:999px;
+          background:#2563eb;
+          color:#ffffff;
+          font-size:13px;
+          font-weight:600;
+          cursor:pointer;
+        "
+      >
+        Register
+      </button>
+    </div>
+
+    <p style="margin-top:14px;font-size:12px;color:#6b7280;">
+      Already have an account?
+      <a href="/login" style="color:#2563eb;font-weight:600;text-decoration:none;">
+        Login here
+      </a>
+    </p>
+  </div>
+</div>
+
+<script>
+async function registerUser() {
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const errorEl = document.getElementById("error");
+  const successEl = document.getElementById("success");
+
+  errorEl.textContent = "";
+  successEl.textContent = "";
+
+  if (!name || !email || !password) {
+    errorEl.textContent = "Please fill all fields.";
+    return;
+  }
+
+  try {
+    const res = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
+
+    if (!res.ok) {
+      let msg = "Registration failed";
+      try {
+        const data = await res.json();
+        if (data.detail) msg = Array.isArray(data.detail) ? data.detail[0].msg || msg : data.detail;
+      } catch (_) {}
+      errorEl.textContent = msg;
+      return;
+    }
+
+    successEl.textContent = "Registration successful. Redirecting to login…";
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 900);
+  } catch (e) {
+    errorEl.textContent = "Network error. Please try again.";
+  }
+}
+</script>
+{% endblock %}

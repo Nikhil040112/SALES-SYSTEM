@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% block title %}All Calls - Sales Pro{% endblock %}
+
+{% block content %}
+<div style="max-width: 1120px; margin: 0 auto; padding: 8px 0 24px;">
+
+  <!-- Header -->
+  <div style="
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+  ">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
+        All Calls
+      </h1>
+      <p style="margin:0;font-size:13px;color:#6b7280;">
+        Track your call history and follow-up progress.
+      </p>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div style="
+        text-align:right;
+        background:#ffffff;
+        border-radius:999px;
+        padding:8px 14px;
+        border:1px solid #e5e7eb;
+        box-shadow:0 8px 20px rgba(15,23,42,0.08);
+      ">
+        <div id="totalCalls" style="font-size:18px;font-weight:700;color:#059669;">0</div>
+        <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;">
+          Total calls
+        </div>
+      </div>
+      <button onclick="loadCalls()" style="
+        border:none;
+        padding:8px 16px;
+        border-radius:999px;
+        background:#2563eb;
+        color:#ffffff;
+        font-size:13px;
+        font-weight:600;
+        cursor:pointer;
+        box-shadow:0 8px 22px rgba(37,99,235,0.25);
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+      ">
+        <span style="font-size:14px;">⟳</span>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div style="
+    display:grid;
+    grid-template-columns:1.1fr 1.1fr;
+    gap:14px;
+  ">
+
+    <!-- Calls list -->
+    <div class="card-shell">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">My calls</h2>
+          <p class="card-subtitle">Most recent first</p>
+        </div>
+      </div>
+      <div id="callsList" style="max-height:380px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Call details -->
+    <div class="card-shell">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Call details</h2>
+          <p class="card-subtitle">Outcome and follow-up timeline</p>
+        </div>
+      </div>
+      <div id="details" class="details-shell">
+        <div class="details-empty">
+          <div class="details-empty-icon">📞</div>
+          <div class="details-empty-title">Select a call</div>
+          <div class="details-empty-text">
+            Choose a call on the left to review its first outcome and follow‑up history.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.card-shell{
+  background:#ffffff;
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 10px 30px rgba(15,23,42,0.06);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.card-header{
+  padding:10px 16px;
+  border-bottom:1px solid #e5e7eb;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.card-title{
+  margin:0;
+  font-size:15px;
+  font-weight:700;
+}
+.card-subtitle{
+  margin:2px 0 0;
+  font-size:11px;
+  color:#9ca3af;
+}
+
+/* Calls list items */
+.call-item{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  padding:10px 14px;
+  border-bottom:1px solid #f3f4f6;
+  cursor:pointer;
+  font-size:13px;
+  transition:background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.call-item:last-child{
+  border-bottom:none;
+}
+.call-item:hover{
+  background:#f3f4ff;
+  transform:translateX(2px);
+  box-shadow:inset 3px 0 0 #4f46e5;
+}
+.call-item.active{
+  background:#e0e7ff;
+  box-shadow:inset 3px 0 0 #2563eb;
+}
+.call-main{
+  flex:1;
+}
+.call-name{
+  font-weight:600;
+  color:#111827;
+  margin-bottom:2px;
+}
+.call-submeta{
+  font-size:11px;
+  color:#9ca3af;
+}
+.call-meta{
+  font-size:11px;
+  font-weight:600;
+  color:#6b7280;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin-left:8px;
+  white-space:nowrap;
+}
+.outcome-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-top:4px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#3730a3;
+  font-size:11px;
+  font-weight:600;
+}
+
+/* Details view */
+.details-shell{
+  padding:14px 16px;
+  font-size:13px;
+  color:#4b5563;
+}
+.details-shell h3{
+  margin:0 0 8px;
+  font-size:17px;
+  font-weight:700;
+}
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.info-item{
+  border-radius:10px;
+  border:1px solid #e5e7eb;
+  padding:8px 10px;
+  background:#f9fafb;
+}
+.info-label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:#9ca3af;
+  margin-bottom:3px;
+}
+.info-value{
+  font-size:13px;
+  font-weight:600;
+  color:#111827;
+}
+.followup-section{
+  border-radius:10px;
+  border:1px solid #e5e7eb;
+  padding:10px 10px 8px;
+  margin-top:10px;
+  background:#f9fafb;
+}
+.followup-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:4px;
+}
+.followup-chip{
+  font-size:11px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:#ecfdf3;
+  color:#047857;
+  font-weight:600;
+}
+.followup-item{
+  border-left:3px solid #10b981;
+  padding:6px 10px;
+  border-radius:6px;
+  background:#ecfdf3;
+  margin-bottom:6px;
+}
+.followup-outcome{
+  font-size:13px;
+  font-weight:600;
+  color:#065f46;
+}
+.followup-meta{
+  font-size:11px;
+  color:#6b7280;
+}
+.details-empty{
+  text-align:center;
+  padding:28px 12px;
+}
+.details-empty-icon{
+  font-size:28px;
+  margin-bottom:6px;
+}
+.details-empty-title{
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:2px;
+  color:#111827;
+}
+.details-empty-text{
+  font-size:12px;
+  color:#6b7280;
+  max-width:260px;
+  margin:0 auto;
+}
+
+@media (max-width: 900px){
+  .info-grid{grid-template-columns:1fr;}
+}
+@media (max-width: 768px){
+  .page-shell > div{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
+<script>
+function headers() {
+  return {
+    "Authorization": "Bearer " + localStorage.getItem("token"),
+    "Content-Type": "application/json"
+  };
+}
+
+let currentCallId = null;
+
+async function loadCalls() {
+  const res = await fetch("/calls/all-mine", { headers: headers() });
+  const data = await res.json();
+
+  document.getElementById("totalCalls").textContent = data.length;
+  const wrap = document.getElementById("callsList");
+  wrap.innerHTML = "";
+
+  data.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "call-item";
+    div.innerHTML = `
+      <div class="call-main">
+        <div class="call-name">${c.client_name}</div>
+        <div class="call-submeta">
+          ${c.contact_number || "No contact"} · ${(c.query_product || "No product")}
+        </div>
+        <div class="outcome-badge">
+          <span style="width:8px;height:8px;border-radius:999px;background:${c.status === "OPEN" ? "#22c55e" : "#9ca3af"};"></span>
+          ${c.call_outcome}
+        </div>
+      </div>
+      <div class="call-meta">
+        ${c.status}
+      </div>
+    `;
+    div.onclick = () => loadHistory(c.id);
+    wrap.appendChild(div);
+  });
+}
+
+async function loadHistory(callId) {
+  const res = await fetch(`/calls/${callId}/follow-up-history`, {
+    headers: headers()
+  });
+  const data = await res.json();
+
+  const c = data.call;
+
+  // support both keys (defensive)
+  const followUps = data.followups || data.follow_ups || [];
+
+  let html = `
+    <h3>${c.client_name}</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Contact</div>
+        <div class="info-value">${c.contact_number || "N/A"}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Product</div>
+        <div class="info-value">${c.query_product || "N/A"}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Source</div>
+        <div class="info-value">${c.query_source || "N/A"}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">First call</div>
+        <div class="info-value">${new Date(c.created_at).toLocaleString("en-IN")}</div>
+      </div>
+    </div>
+    <div class="followup-section">
+      <div class="followup-header">
+        <div>
+          <div class="info-label" style="margin-bottom:4px;">First call outcome</div>
+          <div class="info-value">${c.first_call_outcome}</div>
+        </div>
+        <span class="followup-chip">${c.status}</span>
+      </div>
+      <div style="font-size:11px;color:#6b7280;">
+        ${c.first_follow_up_datetime
+          ? `Next follow‑up: ${new Date(c.first_follow_up_datetime).toLocaleString("en-IN")}`
+          : "No follow‑up scheduled"}
+      </div>
+    </div>
+  `;
+
+  if (followUps.length) {
+    html += `
+      <div class="followup-section" style="margin-top:10px;">
+        <div class="info-label" style="margin-bottom:6px;">Follow‑up history</div>
+    `;
+    followUps.forEach(f => {
+      html += `
+        <div class="followup-item">
+          <div class="followup-outcome">${f.outcome}</div>
+          ${f.remark ? `<div style="font-size:12px;margin:4px 0;color:#111827;">${f.remark}</div>` : ""}
+          <div class="followup-meta">
+            ${f.follow_up_datetime
+              ? `Follow‑up: ${new Date(f.follow_up_datetime).toLocaleString("en-IN")}<br>`
+              : ""}
+            Logged: ${new Date(f.created_at).toLocaleString("en-IN")}
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `
+      <div class="followup-section" style="margin-top:10px;text-align:center;background:#fef2f2;border-color:#fee2e2;">
+        <div style="font-size:20px;margin-bottom:4px;">📭</div>
+        <div style="font-size:13px;color:#6b7280;">No follow‑ups recorded yet.</div>
+      </div>
+    `;
+  }
+
+  document.getElementById("details").innerHTML = html;
+}
+
+loadCalls();
+</script>
+{% endblock %}
