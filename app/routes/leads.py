@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.deps import get_current_user, get_db
 from app.models.lead import Lead
-
+from app.models.call_log import CallLog
+from sqlalchemy import and_
 router = APIRouter(prefix="/leads", tags=["Leads"])
 
 
@@ -14,9 +15,19 @@ def my_leads(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Subquery: leads that already have a CLOSED call
+    closed_leads_subq = (
+        db.query(CallLog.lead_id)
+        .filter(CallLog.status == "CLOSED")
+        .subquery()
+    )
+
     leads = (
         db.query(Lead)
-        .filter(Lead.salesperson_id == user.id)
+        .filter(
+            Lead.salesperson_id == user.id,
+            ~Lead.id.in_(closed_leads_subq)  # 🔴 EXCLUDE CLOSED LEADS
+        )
         .order_by(Lead.created_at.desc())
         .all()
     )
@@ -29,7 +40,7 @@ def my_leads(
             "query_source": l.query_source,
             "query_product": l.query_product,
             "state": l.state,
-            "status": l.status,          # ✅ REQUIRED
+            "status": l.status,          # kept as-is
             "created_at": l.created_at
         }
         for l in leads
