@@ -15,10 +15,10 @@ def my_leads(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Subquery: leads that already have a CLOSED call
-    closed_leads_subq = (
+    # Subquery: leads that have at least ONE call logged
+    called_leads_subq = (
         db.query(CallLog.lead_id)
-        .filter(CallLog.status == "CLOSED")
+        .distinct()
         .subquery()
     )
 
@@ -26,7 +26,7 @@ def my_leads(
         db.query(Lead)
         .filter(
             Lead.salesperson_id == user.id,
-            ~Lead.id.in_(closed_leads_subq)  # 🔴 EXCLUDE CLOSED LEADS
+            ~Lead.id.in_(called_leads_subq)   # ✅ EXCLUDE ALL CALLED LEADS
         )
         .order_by(Lead.created_at.desc())
         .all()
@@ -40,7 +40,7 @@ def my_leads(
             "query_source": l.query_source,
             "query_product": l.query_product,
             "state": l.state,
-            "status": l.status,          # kept as-is
+            "status": l.status,
             "created_at": l.created_at
         }
         for l in leads
