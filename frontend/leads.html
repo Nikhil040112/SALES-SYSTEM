@@ -58,6 +58,24 @@
       </button>
     </div>
 
+    <!-- 🔍 SEARCH (NO UI CHANGE – SAME CARD FLOW) -->
+    <div style="padding:10px 20px;border-bottom:1px solid #e5e7eb;">
+      <input
+        id="leadSearch"
+        type="text"
+        placeholder="Search by customer name or contact number"
+        oninput="filterLeads()"
+        style="
+          width:100%;
+          padding:10px 14px;
+          border-radius:12px;
+          border:1px solid #d1d5db;
+          font-size:14px;
+          outline:none;
+        "
+      />
+    </div>
+
     <!-- Empty State -->
     <div id="emptyState" style="display:none;text-align:center;padding:48px 16px;">
       <div style="font-size:40px;margin-bottom:10px;">📭</div>
@@ -120,6 +138,8 @@
 </style>
 
 <script>
+let ALL_LEADS = [];
+
 function headers() {
   return {
     "Authorization": "Bearer " + localStorage.getItem("token"),
@@ -146,7 +166,11 @@ async function loadLeads() {
   }
   if (!res.ok) return;
 
-  const data = await res.json();
+  ALL_LEADS = await res.json();
+  renderLeads(ALL_LEADS);
+}
+
+function renderLeads(data) {
   const ul = document.getElementById("leads");
   const emptyState = document.getElementById("emptyState");
   const listWrapper = document.getElementById("listWrapper");
@@ -188,6 +212,22 @@ async function loadLeads() {
 
     ul.appendChild(li);
   });
+}
+
+function filterLeads() {
+  const q = document.getElementById("leadSearch").value.toLowerCase().trim();
+
+  if (!q) {
+    renderLeads(ALL_LEADS);
+    return;
+  }
+
+  const filtered = ALL_LEADS.filter(l =>
+    (l.client_name || "").toLowerCase().includes(q) ||
+    (l.contact_number || "").toString().includes(q)
+  );
+
+  renderLeads(filtered);
 }
 
 loadLeads();
