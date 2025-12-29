@@ -187,6 +187,9 @@ def all_my_calls(
 # ----------------------------
 # FOLLOW-UPS (PATCHED – READ FROM call_follow_ups)
 # ----------------------------
+# ----------------------------
+# FOLLOW-UPS (FIXED – RETURN PRODUCT)
+# ----------------------------
 @router.get("/follow-ups")
 def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)):
     now = datetime.now()
@@ -199,7 +202,7 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
         db.query(CallLog)
         .filter(
             CallLog.salesperson_id == user.id,
-            CallLog.status == "OPEN",   # ✅ IMPORTANT
+            CallLog.status == "OPEN",
             CallLog.call_outcome.in_([
                 "Connected",
                 "Busy",
@@ -224,6 +227,9 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
         result.append({
             "id": call.id,
             "client_name": call.client_name,
+            "contact_number": call.contact_number,      # ✅ ADDED
+            "query_product": call.query_product,        # ✅ ADDED
+            "query_source": call.query_source,          # ✅ ADDED
             "call_outcome": call.call_outcome,
             "follow_up_datetime": call.follow_up_datetime,
             "is_overdue": is_overdue
@@ -237,7 +243,7 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
         .join(CallLog, CallLog.id == CallFollowUp.call_id)
         .filter(
             CallFollowUp.salesperson_id == user.id,
-            CallLog.status == "OPEN"    # ✅ IMPORTANT
+            CallLog.status == "OPEN"
         )
         .order_by(CallFollowUp.follow_up_datetime.asc())
         .all()
@@ -249,6 +255,9 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
         result.append({
             "id": call.id,
             "client_name": call.client_name,
+            "contact_number": call.contact_number,      # ✅ ADDED
+            "query_product": call.query_product,        # ✅ ADDED
+            "query_source": call.query_source,          # ✅ ADDED
             "call_outcome": f.outcome,
             "follow_up_datetime": f.follow_up_datetime,
             "is_overdue": is_overdue
