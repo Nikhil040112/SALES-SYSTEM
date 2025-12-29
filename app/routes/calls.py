@@ -230,6 +230,7 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
             "contact_number": call.contact_number,      # ✅ ADDED
             "query_product": call.query_product,        # ✅ ADDED
             "query_source": call.query_source,          # ✅ ADDED
+            "state": call.state,
             "call_outcome": call.call_outcome,
             "follow_up_datetime": call.follow_up_datetime,
             "is_overdue": is_overdue
@@ -258,6 +259,7 @@ def get_follow_ups(user=Depends(get_current_user), db: Session = Depends(get_db)
             "contact_number": call.contact_number,      # ✅ ADDED
             "query_product": call.query_product,        # ✅ ADDED
             "query_source": call.query_source,          # ✅ ADDED
+            "state": call.state,
             "call_outcome": f.outcome,
             "follow_up_datetime": f.follow_up_datetime,
             "is_overdue": is_overdue
