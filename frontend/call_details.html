@@ -345,7 +345,11 @@ async function createCall(e) {
     body: JSON.stringify(payload)
   });
 
-  window.location.href = leadId ? "/leads" : "/follow-ups";
+  // REMOVE REDIRECT, JUST RESET + RELOAD RECENT CALLS
+  e.target.reset();
+  call_outcome.value = "";
+  toggleFollowUpField();
+  loadCalls();
 }
 
 /* LOAD RECENT CALLS */
